@@ -34,7 +34,7 @@ console.log(boxen(
     }), { padding: 1 })
 );
 
-// SELECT manager's names
+// Select all manager's names as a list and plug into call back function
 const selectManagers = cb => {
     let queryString = "SELECT CONCAT(first_name, ' ', last_name) AS manager_name FROM employee WHERE id IN (SELECT DISTINCT manager_id FROM employee);";
 
@@ -48,7 +48,7 @@ const selectManagers = cb => {
     });
 }
 
-// SELECT departments names
+// Select all deparment's names as a list and plug into call back function
 const selectDepartment = cb => {
     connection.query("SELECT name from department", (err, result) => {
         if (err) console.error(err.sqlMessage);
@@ -60,7 +60,7 @@ const selectDepartment = cb => {
     });
 }
 
-// SELECT role names;
+// Select all role's names as a list and plug into call back function
 const selectRole = cb => {
     connection.query("SELECT title from role", (err, result) => {
         if (err) console.error(err.sqlMessage);
@@ -72,6 +72,7 @@ const selectRole = cb => {
     });
 }
 
+// Select all employee's name as a list and plug into call back function
 const selectEmployee = cb => {
     connection.query("SELECT CONCAT (first_name, ' ', last_name) AS name from employee;", (err, result) => {
         if (err) console.error(err.sqlMessage);
@@ -83,7 +84,7 @@ const selectEmployee = cb => {
     });
 }
 
-// run a query and return to main()
+// run a query with queryString input and run main() in order to keep application keep running recursively
 const query =  queryString => {
     connection.query(queryString, (err, result) => {
         if (err) console.error(err.sqlMessage);
@@ -91,7 +92,7 @@ const query =  queryString => {
     });
 }
 
-// run a query and render its result
+// run a query and render its result as a table, then runs main again
 const queryAndRender = queryString => {
     connection.query(queryString, (err, result) => {
         if (err) console.error(err.sqlMessage);
@@ -100,6 +101,7 @@ const queryAndRender = queryString => {
     });
 };
 
+// menu prompt
 const menuPrompt = [
     {
         type: "list",
@@ -124,6 +126,7 @@ const menuPrompt = [
     }
 ];
 
+// add department prompt
 const addDep = [
     {
         type: 'input',
