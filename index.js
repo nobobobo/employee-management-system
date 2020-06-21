@@ -35,7 +35,7 @@ console.log(boxen(
 );
 
 // SELECT manager's names
-const selectManagers = async (cb) => {
+const selectManagers = cb => {
     let queryString = "SELECT CONCAT(first_name, ' ', last_name) AS manager_name FROM employee WHERE id IN (SELECT DISTINCT manager_id FROM employee);";
 
     connection.query(queryString, (err, result) => {
@@ -49,7 +49,7 @@ const selectManagers = async (cb) => {
 }
 
 // SELECT departments names
-const selectDepartment = async (cb) => {
+const selectDepartment = cb => {
     connection.query("SELECT name from department", (err, result) => {
         if (err) console.error(err.sqlMessage);
         let departmentList = [];
@@ -61,7 +61,7 @@ const selectDepartment = async (cb) => {
 }
 
 // SELECT role names;
-const selectRole = async (cb) => {
+const selectRole = cb => {
     connection.query("SELECT title from role", (err, result) => {
         if (err) console.error(err.sqlMessage);
         let roleList = [];
@@ -72,7 +72,7 @@ const selectRole = async (cb) => {
     });
 }
 
-const selectEmployee = async (cb) => {
+const selectEmployee = cb => {
     connection.query("SELECT CONCAT (first_name, ' ', last_name) AS name from employee;", (err, result) => {
         if (err) console.error(err.sqlMessage);
         let employeeList = [];
@@ -84,7 +84,7 @@ const selectEmployee = async (cb) => {
 }
 
 // run a query and return to main()
-const query = async queryString => {
+const query =  queryString => {
     connection.query(queryString, (err, result) => {
         if (err) console.error(err.sqlMessage);
         main();
@@ -92,7 +92,7 @@ const query = async queryString => {
 }
 
 // run a query and render its result
-const queryAndRender = async (queryString) => {
+const queryAndRender = queryString => {
     connection.query(queryString, (err, result) => {
         if (err) console.error(err.sqlMessage);
         console.table(result);
@@ -192,7 +192,7 @@ const main = async () => {
                         message: 'Please enter the salary of this role: ',
                         name: 'salary'
                     }]
-                ).then(async res => {
+                ).then(res => {
                     // INSERT INTO role (title, salary, department_id) VALUES ('Intern', 50000, (SELECT id FROM Department WHERE name = 'Sales'));
                     query(`INSERT INTO role (title, salary, department_id) VALUES ('${res.title}',${res.salary}, (SELECT id FROM Department WHERE name = '${res.departmentName}'));`);
                 })
@@ -360,7 +360,7 @@ const main = async () => {
                 })
             });
             break;
-            
+
         default:
             connection.end();
     }
