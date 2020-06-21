@@ -5,3 +5,5 @@ select t1.id, t1.first_name, t1.last_name, title, name as department, salary, co
 
 
 SELECT id, first_name, last_name FROM employee WHERE manager_id IN (select id from employee WHERE first_name = 'Regina' AND last_name = 'Huang');
+
+SELECT d.name AS department, SUM(salary) AS total_salary FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id GROUP BY department_id;

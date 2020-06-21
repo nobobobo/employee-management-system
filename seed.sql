@@ -34,10 +34,10 @@ INSERT INTO company.role(title, salary, department_id) VALUES ('Software Develop
 ('Software Development Manager', 300000, 1),
 ('Solution Architect', 120000, 2),
 ('Sr. SA', 150000, 2),
-('Operations Manager', 180000, 2),
+('Sales Ops Manager', 180000, 2),
 ('Support Engineer', 80000, 3),
-('Sr. SE', 100000, 3),
-('Operations Manager', 110000, 3);
+('Sr. Support Eng', 100000, 3),
+('Support Ops Manager', 110000, 3);
 
 INSERT INTO company.employee(first_name, last_name, role_id, manager_id) VALUES 
 ('Regina', 'Huang', 3, NULL),
