@@ -13,7 +13,7 @@
 <a name="desc"></a>
 # 1. Description 
 
-This command line application uses inquirer to prompt the user to select CRUD operations that run on employee and company info stored at mysql database (localhot)
+This command line application uses inquirer to prompt the user to select CRUD operations that run on employee and company info stored at mysql database (localhost:3306)
 
 ![capture](capture.gif)
 
