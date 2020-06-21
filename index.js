@@ -18,7 +18,7 @@ const connection = mysql.createConnection({
 // connect to mysql server
 connection.connect(err => {
     if (err) {
-        console.error("error connecting: " + err.stack);
+        console.error("error connecting: " + err);
         return;
     }
 
@@ -39,7 +39,7 @@ const selectManagers = async (cb) => {
     let queryString = "SELECT CONCAT(first_name, ' ', last_name) AS manager_name FROM employee WHERE id IN (SELECT DISTINCT manager_id FROM employee);";
 
     connection.query(queryString, (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         let managerList = [];
         for (elem of result) {
             managerList.push(elem.manager_name);
@@ -51,7 +51,7 @@ const selectManagers = async (cb) => {
 // SELECT departments names
 const selectDepartment = async (cb) => {
     connection.query("SELECT name from department", (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         let departmentList = [];
         for (elem of result) {
             departmentList.push(elem.name);
@@ -63,7 +63,7 @@ const selectDepartment = async (cb) => {
 // SELECT role names;
 const selectRole = async (cb) => {
     connection.query("SELECT title from role", (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         let roleList = [];
         for (elem of result) {
             roleList.push(elem.title);
@@ -74,7 +74,7 @@ const selectRole = async (cb) => {
 
 const selectEmployee = async (cb) => {
     connection.query("SELECT CONCAT (first_name, ' ', last_name) AS name from employee;", (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         let employeeList = [];
         for (elem of result) {
             employeeList.push(elem.name);
@@ -86,7 +86,7 @@ const selectEmployee = async (cb) => {
 // run a query and return to main()
 const query = async queryString => {
     connection.query(queryString, (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         main();
     });
 }
@@ -94,7 +94,7 @@ const query = async queryString => {
 // run a query and render its result
 const queryAndRender = async (queryString) => {
     connection.query(queryString, (err, result) => {
-        if (err) throw err;
+        if (err) console.error(err.sqlMessage);
         console.table(result);
         main();
     });
@@ -314,9 +314,53 @@ const main = async () => {
             })
             break;
 
-        // 'Delete Departments',
-        // 'Delete Roles',
-        // 'Delete Employees'
+        case 'Delete Departments': 
+            selectDepartment(departmentList => {
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        message: 'Which department do you want to remove?',
+                        choices: departmentList,
+                        name: 'departmentName'
+                    }
+                ]).then(res => {
+                    query(`DELETE FROM department WHERE name = '${res.departmentName}'`);
+                })
+            })
+            break;
+
+        case 'Delete Roles':
+            selectRole(roleList => {
+                inquirer.prompt([
+                    {
+                        type:'list',
+                        message: 'Which role do you want to remove?',
+                        choices: roleList,
+                        name: 'roleName'
+
+                    }
+                ]).then(res => {
+                    query(`DELETE FROM role WHERE title = '${res.roleName}'`);
+                })
+            })
+            break;
+
+        case 'Delete Employees':
+            selectEmployee(employeeList => {
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        message: 'Which employee do you want to remove?',
+                        choices: employeeList,
+                        name: 'employeeName'
+                    }
+                ]).then(res => {
+                    let [fName, lName] = res.employeeName.split(' ');
+                    query(`DELETE FROM employee WHERE first_name = '${fName}' AND last_name = '${lName}';`);
+                })
+            });
+            break;
+            
         default:
             connection.end();
     }
