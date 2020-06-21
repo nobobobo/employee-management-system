@@ -18,9 +18,11 @@
   "homepage": "https://github.com/nobobobo/employee-management-system#readme",
   "dependencies": {
     "boxen": "^4.2.0",
+    "console.table": "^0.10.0",
     "dotenv": "^8.2.0",
     "figlet": "^1.4.0",
     "inquirer": "^7.2.0",
     "mysql": "^2.18.1"
-  }
+  },
+  "devDependencies": {}
 }

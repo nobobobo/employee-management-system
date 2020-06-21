@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const mysql = require('mysql');
 const figlet = require('figlet');
 const boxen = require('boxen');
+const cTable = require('console.table');
 
 require('dotenv').config()
 
@@ -36,10 +37,8 @@ console.log(boxen(
 );
 
 
-// helper function: SELECT ALL
-const selectAll = async table => {
-    let queryString = 'SELECT * FROM ' + table + ';';
-
+// helper function: SELECT AND RENDER
+const selectAndRender = async (queryString) => {
     connection.query(queryString, (err, result) => {
         if (err) throw err;
         console.table(result);
@@ -47,6 +46,20 @@ const selectAll = async table => {
     });
 };
 
+// helper function: SELECT WHERE
+
+const selectManagers = async (cb) => {
+    let queryString = "SELECT CONCAT(first_name, ' ', last_name) AS manager_name FROM employee WHERE id IN (SELECT DISTINCT manager_id FROM employee);";
+
+    connection.query(queryString, (err, result) => {
+        if (err) throw err;
+        let managerList = [];
+        for (elem of result) {
+            managerList.push(elem.manager_name);
+        }
+        cb(managerList);
+    })
+}
 
 const menuPrompt = [
     {
@@ -72,24 +85,38 @@ const menuPrompt = [
     }
 ];
 
+
 const main = async () => {
 
     let { action } = await inquirer.prompt(menuPrompt);
 
     switch (action) {
         case 'View All Employees':
-            await selectAll('employee');
+            selectAndRender("SELECT t1.id, t1.first_name, t1.last_name, title, name AS department, salary, CONCAT(t4.first_name, ' ', t4.last_name) AS manager FROM employee t1 LEFT JOIN role t2 ON t1.role_id = t2.id LEFT JOIN department t3 ON t2.department_id = t3.id LEFT JOIN employee t4 ON t1.manager_id = t4.id;");
             break;
         case 'View All Departments':
-            await selectAll('department');
+            selectAndRender('SELECT * FROM department');
             break;
         case 'View All Roles':
-            await selectAll('role');
+            selectAndRender('SELECT * FROM role');
+            break;
+        case 'View Employees By Manager':
+            selectManagers(function(managerList){
+                inquirer.prompt([
+                    {
+                        type: "list",
+                        message: "Which employee do you want to see direct reports for?",
+                        choices: managerList,
+                        name: "managerName"
+                    }
+                ]).then(res => {
+                    let [firstName, lastName] = res.managerName.split(' ');
+                    selectAndRender(`SELECT id, first_name, last_name FROM employee WHERE manager_id IN (select id from employee WHERE first_name = '${firstName}' AND last_name = '${lastName}');`);
+                })
+            });
             break;
         default:
             connection.end();
-            isDone = true;
-
     }
 }
 
