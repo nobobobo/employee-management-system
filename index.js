@@ -75,7 +75,7 @@ const selectRole = async (cb) => {
 const selectEmployee = async (cb) => {
     connection.query("SELECT CONCAT (first_name, ' ', last_name) AS name from employee;", (err, result) => {
         if (err) throw err;
-        let employeeList = ['None'];
+        let employeeList = [];
         for (elem of result) {
             employeeList.push(elem.name);
         }
@@ -174,6 +174,7 @@ const main = async () => {
                 query(`INSERT INTO department (name) VALUES ('${res.department_name}');`);
             });
             break;
+
         case 'Add Roles':
             selectDepartment(departmentList => {
                 inquirer.prompt([
@@ -217,6 +218,7 @@ const main = async () => {
                     }]
                 ).then(res1 => {
                     selectEmployee(employeeList => {
+                        employeeList.unshift('None');
                         inquirer.prompt([{
                             type: 'list',
                             message: "Who is the employee's manager?",
@@ -246,7 +248,6 @@ const main = async () => {
                                         WHERE first_name = '${mng_fName}' 
                                         AND last_name = '${mng_lName}') t
                                 ));`)
-
                             }
                         });
                     });
@@ -254,7 +255,68 @@ const main = async () => {
             });
             break;
 
+        case 'Update Employee Roles':
+            selectEmployee(employeeList => {
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        message: "Which employee's role do you want to update?",
+                        choices: employeeList,
+                        name: 'employeeName'
+                    }
+                ]).then(res1 => selectRole(roleList => {
+                    inquirer.prompt([
+                        {
+                            type: 'list',
+                            message: "Which role do you want to set as the employee's new role?",
+                            choices: roleList,
+                            name: 'roleName'
+                        }
+                    ]).then(res2 => {
+                        // UPDATE employee SET role_id = (SELECT id FROM role WHERE title = 'Software Development Manager') WHERE first_name = 'Gina' AND last_name = 'Barrow';
+                        let [fName, lName] = res1.employeeName.split(' ');
+                        query(`UPDATE employee SET role_id = (SELECT id FROM role WHERE title = '${res2.roleName}') WHERE first_name = '${fName}' AND last_name = '${lName}';`);
+                    })
+                }))
+            })
+            break;
 
+        case 'Update Employee Managers':
+            selectEmployee(employeeList => {
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        message: "Which employee's manager do you want to update?",
+                        choices: employeeList,
+                        name: 'employeeName'
+                    }
+                ]).then(res1 => selectEmployee(employeeList => {
+                    employeeList.unshift('None');
+                    inquirer.prompt([
+                        {
+                            type: 'list',
+                            message: "Which employee do you want to set as the employee's new manager?",
+                            choices: employeeList,
+                            name: 'managerName'
+                        }
+                    ]).then(res2 => {
+                        let [fName, lName] = res1.employeeName.split(' ');
+                        if (res2.managerName === 'None'){
+                            query(`UPDATE employee SET manager_id = NULL WHERE first_name = '${fName}' AND last_name = '${lName}';`);
+                        } else {
+                            // UPDATE employee SET manager_id = (SELECT t.id FROM (SELECT * FROM employee WHERE first_name = 'Regina' AND last_name = 'Huang') t) WHERE first_name = 'Gina' AND last_name = 'Barrow';
+
+                            let [mng_fName, mng_lName] = res2.managerName.split(' ');
+                            query(`UPDATE employee SET manager_id = ( SELECT t.id FROM (SELECT * FROM employee WHERE first_name = '${mng_fName}' AND last_name = '${mng_lName}') t) WHERE first_name = '${fName}' AND last_name = '${lName}';`);
+                        }
+                    })
+                }))
+            })
+            break;
+
+        // 'Delete Departments',
+        // 'Delete Roles',
+        // 'Delete Employees'
         default:
             connection.end();
     }
