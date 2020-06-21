@@ -4,7 +4,6 @@ const mysql = require('mysql');
 const figlet = require('figlet');
 const boxen = require('boxen');
 const cTable = require('console.table');
-
 require('dotenv').config()
 
 // init mysql connections
@@ -15,7 +14,6 @@ const connection = mysql.createConnection({
     password: process.env.DB_PASS,
     database: 'company'
 });
-
 
 // connect to mysql server
 connection.connect(err => {
@@ -36,17 +34,7 @@ console.log(boxen(
     }), { padding: 1 })
 );
 
-
-// SELECT AND RENDER
-const selectAndRender = async (queryString) => {
-    connection.query(queryString, (err, result) => {
-        if (err) throw err;
-        console.table(result);
-        main();
-    });
-};
-
-// SELECT MANAGERS
+// SELECT manager's names
 const selectManagers = async (cb) => {
     let queryString = "SELECT CONCAT(first_name, ' ', last_name) AS manager_name FROM employee WHERE id IN (SELECT DISTINCT manager_id FROM employee);";
 
@@ -60,25 +48,57 @@ const selectManagers = async (cb) => {
     });
 }
 
-// SELECT DEPARTMENT 
+// SELECT departments names
 const selectDepartment = async (cb) => {
-    connection.query("SELECT name from department", (err, result) =>{
+    connection.query("SELECT name from department", (err, result) => {
         if (err) throw err;
-        let departmentList =[];
-        for (elem of result){
+        let departmentList = [];
+        for (elem of result) {
             departmentList.push(elem.name);
         }
         cb(departmentList);
     });
 }
 
-// INSERT
-const insert = async queryString => {
-    connection.query(queryString, (err, result)=> {
+// SELECT role names;
+const selectRole = async (cb) => {
+    connection.query("SELECT title from role", (err, result) => {
+        if (err) throw err;
+        let roleList = [];
+        for (elem of result) {
+            roleList.push(elem.title);
+        }
+        cb(roleList);
+    });
+}
+
+const selectEmployee = async (cb) => {
+    connection.query("SELECT CONCAT (first_name, ' ', last_name) AS name from employee;", (err, result) => {
+        if (err) throw err;
+        let employeeList = ['None'];
+        for (elem of result) {
+            employeeList.push(elem.name);
+        }
+        cb(employeeList);
+    });
+}
+
+// run a query and return to main()
+const query = async queryString => {
+    connection.query(queryString, (err, result) => {
         if (err) throw err;
         main();
     });
 }
+
+// run a query and render its result
+const queryAndRender = async (queryString) => {
+    connection.query(queryString, (err, result) => {
+        if (err) throw err;
+        console.table(result);
+        main();
+    });
+};
 
 const menuPrompt = [
     {
@@ -106,7 +126,7 @@ const menuPrompt = [
 
 const addDep = [
     {
-        type:'input',
+        type: 'input',
         message: 'Please enter the name of the new department: ',
         name: 'department_name'
     }
@@ -118,15 +138,15 @@ const main = async () => {
 
     switch (action) {
         case 'View All Employees':
-            selectAndRender("SELECT t1.id, t1.first_name, t1.last_name, title, name AS department, salary, CONCAT(t4.first_name, ' ', t4.last_name) AS manager FROM employee t1 LEFT JOIN role t2 ON t1.role_id = t2.id LEFT JOIN department t3 ON t2.department_id = t3.id LEFT JOIN employee t4 ON t1.manager_id = t4.id;");
+            queryAndRender("SELECT t1.id, t1.first_name, t1.last_name, title, name AS department, salary, CONCAT(t4.first_name, ' ', t4.last_name) AS manager FROM employee t1 LEFT JOIN role t2 ON t1.role_id = t2.id LEFT JOIN department t3 ON t2.department_id = t3.id LEFT JOIN employee t4 ON t1.manager_id = t4.id;");
             break;
 
         case 'View All Departments':
-            selectAndRender('SELECT * FROM department');
+            queryAndRender('SELECT * FROM department');
             break;
 
         case 'View All Roles':
-            selectAndRender('SELECT * FROM role');
+            queryAndRender('SELECT * FROM role');
             break;
 
         case 'View Employees By Manager':
@@ -140,44 +160,99 @@ const main = async () => {
                     }
                 ]).then(res => {
                     let [firstName, lastName] = res.managerName.split(' ');
-                    selectAndRender(`SELECT id, first_name, last_name FROM employee WHERE manager_id IN (select id from employee WHERE first_name = '${firstName}' AND last_name = '${lastName}');`);
+                    queryAndRender(`SELECT id, first_name, last_name FROM employee WHERE manager_id IN (select id from employee WHERE first_name = '${firstName}' AND last_name = '${lastName}');`);
                 })
             });
             break;
 
         case 'View Total Salary By Department':
-            selectAndRender('SELECT d.name AS department, SUM(salary) AS total_salary FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id GROUP BY department_id;')
+            queryAndRender('SELECT d.name AS department, SUM(salary) AS total_salary FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id GROUP BY department_id;')
             break;
 
         case 'Add Departments':
-            inquirer.prompt(addDep).then( res => {
-                insert(`INSERT INTO department (name) VALUES ('${res.department_name}');`);
+            inquirer.prompt(addDep).then(res => {
+                query(`INSERT INTO department (name) VALUES ('${res.department_name}');`);
             });
             break;
         case 'Add Roles':
-            selectDepartment(departmentList=>{
+            selectDepartment(departmentList => {
                 inquirer.prompt([
                     {
                         type: 'input',
                         message: 'Please enter the title of the new role',
                         name: 'title'
-                    },{ 
+                    }, {
                         type: 'list',
                         message: "Please select a department:",
                         choices: departmentList,
-                        name: 'departmentName' 
+                        name: 'departmentName'
                     }, {
                         type: 'number',
                         message: 'Please enter the salary of this role: ',
                         name: 'salary'
                     }]
-                ).then (async res => {
+                ).then(async res => {
                     // INSERT INTO role (title, salary, department_id) VALUES ('Intern', 50000, (SELECT id FROM Department WHERE name = 'Sales'));
-                    insert(`INSERT INTO role (title, salary, department_id) VALUES ('${res.title}',${res.salary}, (SELECT id FROM Department WHERE name = '${res.departmentName}'));`);
+                    query(`INSERT INTO role (title, salary, department_id) VALUES ('${res.title}',${res.salary}, (SELECT id FROM Department WHERE name = '${res.departmentName}'));`);
                 })
             })
             break;
-        //case 'Add Employess':
+
+        case 'Add Employess':
+            selectRole(roleList => {
+                inquirer.prompt([
+                    {
+                        type: 'input',
+                        message: "What is the employee's first name?",
+                        name: 'firstName'
+                    }, {
+                        type: 'input',
+                        message: "What is the employee's last name?",
+                        name: "lastName",
+                    }, {
+                        type: 'list',
+                        message: "What is the emplyee's role?",
+                        choices: roleList,
+                        name: 'roleName'
+                    }]
+                ).then(res1 => {
+                    selectEmployee(employeeList => {
+                        inquirer.prompt([{
+                            type: 'list',
+                            message: "Who is the employee's manager?",
+                            choices: employeeList,
+                            name: 'managerName'
+                        }]).then(res2 => {
+
+                            if (res1.managerName === 'None') {
+                                query(`INSERT INTO employee 
+                                (first_name, last_name, role_id)
+                            VALUES 
+                                ('${res1.firstName}',
+                                '${res1.lastName}',
+                                (SELECT id FROM tole WHERE title = '${res1.roleName}'));`)
+
+                            } else {
+
+                                let [mng_fName, mng_lName] = res2.managerName.split(' ');
+                                query(`INSERT INTO employee 
+                                (first_name, last_name, role_id, manager_id)
+                            VALUES 
+                                ('${res1.firstName}',
+                                '${res1.lastName}',
+                                (SELECT id FROM role WHERE title = '${res1.roleName}'),
+                                (SELECT t.id FROM 
+                                    (SELECT * FROM employee 
+                                        WHERE first_name = '${mng_fName}' 
+                                        AND last_name = '${mng_lName}') t
+                                ));`)
+
+                            }
+                        });
+                    });
+                });
+            });
+            break;
 
 
         default:
